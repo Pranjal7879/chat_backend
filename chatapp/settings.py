@@ -245,7 +245,22 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-local-dev-secret")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 # Allow Railway and localhost in production
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "pranjal-chat.up.railway.app",
+    "127.0.0.1",
+    "localhost",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://pranjal-chat.up.railway.app",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://pranjal-chat.up.railway.app",
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 # Installed apps
 INSTALLED_APPS = [
