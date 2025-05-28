@@ -1,5 +1,3 @@
-
-
 import json
 from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -9,13 +7,12 @@ from channels.db import database_sync_to_async
 
 User = get_user_model()
 
-
 connected_users = {}
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         try:
-            
+
             token = self.scope['query_string'].decode().split('=')[1]
             access_token = AccessToken(token)
             user = await self.get_user(access_token['user_id'])
