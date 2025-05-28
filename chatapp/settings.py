@@ -247,6 +247,7 @@ DEBUG = os.getenv("DEBUG", "True") == "True"
 # Allow Railway and localhost in production
 ALLOWED_HOSTS = [
     "pranjal-chat.up.railway.app",
+    "https://chat-frontend-alpha-wine.vercel.app",
     "127.0.0.1",
     "localhost",
 ]
@@ -291,9 +292,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  
-]
 
 ROOT_URLCONF = 'chatapp.urls'
 
