@@ -245,7 +245,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-local-dev-secret")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 # Allow Railway and localhost in production
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = ["*"]
 
 # Installed apps
 INSTALLED_APPS = [
