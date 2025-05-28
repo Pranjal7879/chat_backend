@@ -1,1 +1,1 @@
-web: daphne chatapp.asgi:application
+web: uvicorn chatapp.asgi:application
