@@ -119,23 +119,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_user(user_id):
         return User.objects.get(id=user_id)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
