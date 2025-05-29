@@ -1,3 +1,5 @@
+
+
 # import json
 # from urllib.parse import parse_qs
 # from channels.generic.websocket import AsyncWebsocketConsumer
@@ -7,12 +9,12 @@
 
 # User = get_user_model()
 
+# # Keep track of connected users
 # connected_users = {}
 
 # class ChatConsumer(AsyncWebsocketConsumer):
 #     async def connect(self):
 #         try:
-
 #             token = self.scope['query_string'].decode().split('=')[1]
 #             access_token = AccessToken(token)
 #             user = await self.get_user(access_token['user_id'])
@@ -23,11 +25,10 @@
 #             await self.close()
 #             return
 
-
 #         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
 #         self.room_group_name = f"chat_{self.room_name}"
 
-
+#         # Join the room group
 #         await self.channel_layer.group_add(
 #             self.room_group_name,
 #             self.channel_name
@@ -35,11 +36,10 @@
 
 #         await self.accept()
 
-
 #         connected_users[self.user.email] = self.channel_name
 #         print(f"[Connected] {self.user.email} joined {self.room_group_name}")
 
-   
+#         # Send updated user list to all clients
 #         await self.channel_layer.group_send(
 #             self.room_group_name,
 #             {
@@ -49,11 +49,9 @@
 #         )
 
 #     async def disconnect(self, close_code):
-      
 #         if self.user and self.user.email in connected_users:
 #             del connected_users[self.user.email]
 
-           
 #             await self.channel_layer.group_send(
 #                 self.room_group_name,
 #                 {
@@ -62,11 +60,11 @@
 #                 }
 #             )
 
-      
 #         await self.channel_layer.group_discard(
 #             self.room_group_name,
 #             self.channel_name
 #         )
+
 #         print(f"[Disconnected] {self.user.email} left {self.room_group_name}")
 
 #     async def receive(self, text_data):
@@ -81,8 +79,8 @@
 #             print(f"[Receive Error] Invalid JSON: {e}")
 #             return
 
-      
-#         if to_user_email in connected_users:
+#         # Send message to the receiver only if not sending to self
+#         if to_user_email != self.user.email and to_user_email in connected_users:
 #             await self.channel_layer.send(
 #                 connected_users[to_user_email],
 #                 {
@@ -93,7 +91,7 @@
 #                 }
 #             )
 
-       
+#         # Always send confirmation back to sender
 #         await self.send(text_data=json.dumps({
 #             "type": "chat",
 #             "message": message,
@@ -101,8 +99,8 @@
 #             "to": to_user_email,
 #         }))
 
-
 #     async def chat_message(self, event):
+#         # Send received message to WebSocket
 #         await self.send(text_data=json.dumps({
 #             "type": "chat",
 #             "message": event["message"],
@@ -110,8 +108,8 @@
 #             "to": event["to"],
 #         }))
 
-
 #     async def users_update(self, event):
+#         # Send updated user list to WebSocket
 #         await self.send(text_data=json.dumps({
 #             "type": "users",
 #             "users": event["users"],
@@ -132,8 +130,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 import json
-from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
@@ -141,123 +150,76 @@ from channels.db import database_sync_to_async
 
 User = get_user_model()
 
-# Keep track of connected users
-connected_users = {}
+connected_users = {}  # username -> channel_name
+
+@database_sync_to_async
+def get_user(user_id):
+    return User.objects.get(id=user_id)
+
+@database_sync_to_async
+def set_user_online_status(user, status):
+    user.is_online = status
+    user.save()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         try:
             token = self.scope['query_string'].decode().split('=')[1]
             access_token = AccessToken(token)
-            user = await self.get_user(access_token['user_id'])
-            self.scope['user'] = user
-            self.user = user
+            self.user = await get_user(access_token['user_id'])
+            await set_user_online_status(self.user, True)
         except Exception as e:
-            print(f"[Connect Error] Invalid token or user: {e}")
             await self.close()
             return
 
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         self.room_group_name = f"chat_{self.room_name}"
-
-        # Join the room group
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-        connected_users[self.user.email] = self.channel_name
-        print(f"[Connected] {self.user.email} joined {self.room_group_name}")
-
-        # Send updated user list to all clients
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                "type": "users_update",
-                "users": list(connected_users.keys()),
-            }
-        )
+        connected_users[self.user.username] = self.channel_name
+        print(f"[Connected] {self.user.username}")
 
     async def disconnect(self, close_code):
-        if self.user and self.user.email in connected_users:
-            del connected_users[self.user.email]
-
-            # Notify others of user disconnect
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    "type": "users_update",
-                    "users": list(connected_users.keys()),
-                }
-            )
-
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
-
-        print(f"[Disconnected] {self.user.email} left {self.room_group_name}")
+        await set_user_online_status(self.user, False)
+        connected_users.pop(self.user.username, None)
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        print(f"[Disconnected] {self.user.username}")
 
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
             message = data.get("message")
-            to_user_email = data.get("to")
-            if not message or not to_user_email:
-                print("[Receive Warning] Missing 'message' or 'to'")
+            to_username = data.get("to")
+            if not message or not to_username:
                 return
-        except json.JSONDecodeError as e:
-            print(f"[Receive Error] Invalid JSON: {e}")
+        except json.JSONDecodeError:
             return
 
-        # Send message to the receiver only if not sending to self
-        if to_user_email != self.user.email and to_user_email in connected_users:
+        if to_username != self.user.username and to_username in connected_users:
             await self.channel_layer.send(
-                connected_users[to_user_email],
+                connected_users[to_username],
                 {
                     "type": "chat.message",
                     "message": message,
-                    "from": self.user.email,
-                    "to": to_user_email,
+                    "from": self.user.username,
+                    "to": to_username,
                 }
             )
 
-        # Always send confirmation back to sender
         await self.send(text_data=json.dumps({
             "type": "chat",
             "message": message,
             "from": "You",
-            "to": to_user_email,
+            "to": to_username,
         }))
 
     async def chat_message(self, event):
-        # Send received message to WebSocket
         await self.send(text_data=json.dumps({
             "type": "chat",
             "message": event["message"],
             "from": event["from"],
             "to": event["to"],
         }))
-
-    async def users_update(self, event):
-        # Send updated user list to WebSocket
-        await self.send(text_data=json.dumps({
-            "type": "users",
-            "users": event["users"],
-        }))
-
-    @staticmethod
-    @database_sync_to_async
-    def get_user(user_id):
-        return User.objects.get(id=user_id)
-
-
-
-
-
-
-
 
 

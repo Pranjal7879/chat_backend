@@ -5,7 +5,7 @@ class User(AbstractUser):
     name = models.CharField(max_length=50)
     username = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=50, unique=True)
-
+    is_online = models.BooleanField(default=False) 
     objects = UserManager()
 
     USERNAME_FIELD = 'email' 
