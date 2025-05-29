@@ -237,14 +237,14 @@ import os
 from datetime import timedelta
 import dj_database_url
 
-# Base directory
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Secret Key and Debug from environment
+
 SECRET_KEY = os.getenv("SECRET_KEY", "your-local-dev-secret")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-# Allow Railway and localhost in production
+
 ALLOWED_HOSTS = [
     "pranjal-chat.up.railway.app",
     "https://chat-frontend-alpha-wine.vercel.app",
@@ -263,7 +263,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 
-# Installed apps
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -279,7 +279,7 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
 ]
 
-# Middleware
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -314,7 +314,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'chatapp.wsgi.application'
 ASGI_APPLICATION = 'chatapp.asgi.application'
 
-# PostgreSQL database from Railway via env
+
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get("DATABASE_URL"),
@@ -323,7 +323,7 @@ DATABASES = {
     )
 }
 
-# Password validation
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -331,29 +331,33 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
+
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Channels with Redis
+
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379")
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
+            "hosts": [REDIS_URL],
         },
     },
 }
+
 
 AUTH_USER_MODEL = 'livechat.User'
 
