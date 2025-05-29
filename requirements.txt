@@ -1,6 +1,7 @@
 anyio==4.9.0
 asgiref==3.8.1
 channels==4.2.2
+channels_redis==4.2.0
 click==8.2.1
 dj-database-url==2.3.0
 Django==5.2.1
